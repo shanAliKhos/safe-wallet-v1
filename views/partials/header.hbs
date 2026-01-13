@@ -1,0 +1,19 @@
+<header class="admin-header">
+  <div class="header-content">
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="bi bi-list"></i>
+    </button>
+    <div class="header-actions">
+      {{#if user}}
+      <div class="user-menu">
+        <span>{{user.name}}</span>
+        <a href="/auth/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+      </div>
+      {{else}}
+      <a href="/auth/login" class="btn btn-sm btn-primary">Login</a>
+      {{/if}}
+    </div>
+  </div>
+</header>
+
+

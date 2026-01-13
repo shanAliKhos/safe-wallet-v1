@@ -1,0 +1,345 @@
+<style>
+  .dashboard-header {
+    margin-bottom: 2rem;
+  }
+  .dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  .dashboard-subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e5e7eb;
+    height: 100%;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .stat-icon.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  .stat-icon.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+  }
+  .stat-icon.info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+  }
+  .stat-icon.warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+  }
+  .stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+  }
+  .info-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  .info-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+  .info-value {
+    font-size: 1rem;
+    color: #1a1a1a;
+    font-weight: 600;
+    word-break: break-all;
+    margin-bottom: 1rem;
+  }
+  .info-value code {
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #667eea;
+    font-weight: 600;
+  }
+  .badge-custom {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table {
+    margin-bottom: 0;
+  }
+  .table thead {
+    background: #f9fafb;
+  }
+  .table thead th {
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    padding: 1rem;
+  }
+  .table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .table tbody tr:hover {
+    background: #f9fafb;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+  .empty-state p {
+    margin: 0;
+    font-size: 1rem;
+  }
+</style>
+
+<div class="dashboard-header">
+  <h1 class="dashboard-title">Dashboard</h1>
+  <p class="dashboard-subtitle">Welcome back, {{user.name}}! Here's an overview of your account.</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon primary">
+        <i class="bi bi-wallet2"></i>
+      </div>
+      <div class="stat-label">Total Wallets</div>
+      <div class="stat-value">{{stats.totalWallets}}</div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div class="stat-label">Vendor Wallet</div>
+      <div class="stat-value">{{#if wallet}}Active{{else}}None{{/if}}</div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon info">
+        <i class="bi bi-person-check"></i>
+      </div>
+      <div class="stat-label">User Wallets</div>
+      <div class="stat-value">{{wallets.length}}</div>
+    </div>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="stat-label">Recent Activity</div>
+      <div class="stat-value">{{stats.recentTransactions}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- User Information -->
+  <div class="col-lg-4 mb-4">
+    <div class="info-card">
+      <div class="info-card-header">
+        <h3 class="info-card-title">
+          <i class="bi bi-person-circle"></i>
+          User Information
+        </h3>
+      </div>
+      <div class="info-label">Name</div>
+      <div class="info-value">{{user.name}}</div>
+      
+      <div class="info-label">Email</div>
+      <div class="info-value">{{user.email}}</div>
+      
+      <div class="info-label">Role</div>
+      <div class="info-value">
+        <span class="badge badge-custom bg-primary">{{user.role}}</span>
+      </div>
+      
+      {{#if user.created_at}}
+      <div class="info-label">Member Since</div>
+      <div class="info-value">{{user.created_at}}</div>
+      {{/if}}
+    </div>
+  </div>
+
+  <!-- Vendor Wallet Information -->
+  <div class="col-lg-8 mb-4">
+    <div class="info-card">
+      <div class="info-card-header">
+        <h3 class="info-card-title">
+          <i class="bi bi-shield-lock"></i>
+          Vendor Wallet (Level 2)
+        </h3>
+      </div>
+      
+      {{#if wallet}}
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <div class="info-label">Wallet Address</div>
+          <div class="info-value">
+            <code>{{wallet.address}}</code>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="info-label">Tracking ID</div>
+          <div class="info-value">
+            <code>{{wallet.tracking_id}}</code>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="info-label">Level</div>
+          <div class="info-value">
+            <span class="badge badge-custom bg-success">Level {{wallet.level}}</span>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="info-label">Type</div>
+          <div class="info-value">
+            <span class="badge badge-custom bg-info">{{wallet.type}}</span>
+          </div>
+        </div>
+        {{#if wallet.created_at}}
+        <div class="col-md-6 mb-3">
+          <div class="info-label">Created At</div>
+          <div class="info-value">{{wallet.created_at}}</div>
+        </div>
+        {{/if}}
+      </div>
+      {{else}}
+      <div class="empty-state">
+        <i class="bi bi-wallet"></i>
+        <p>No vendor wallet found. A wallet will be created automatically upon registration.</p>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+<!-- User Wallets Table -->
+<div class="info-card">
+  <div class="info-card-header">
+    <h3 class="info-card-title">
+      <i class="bi bi-wallet2"></i>
+      Your Wallets (Level 3)
+    </h3>
+  </div>
+  
+  {{#if wallets}}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Address</th>
+          <th>Type</th>
+          <th>Level</th>
+          <th>Label</th>
+          <th>Purpose</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each wallets}}
+        <tr>
+          <td>{{this.index}}</td>
+          <td>
+            <code style="font-size: 0.85rem;">{{this.address}}</code>
+          </td>
+          <td>
+            <span class="badge badge-custom bg-info">{{this.type}}</span>
+          </td>
+          <td>
+            <span class="badge badge-custom bg-success">Level {{this.level}}</span>
+          </td>
+          <td>{{this.label}}</td>
+          <td>
+            <span class="badge badge-custom bg-secondary">{{this.purpose}}</span>
+          </td>
+          <td>
+            {{#if this.created_at}}{{this.created_at}}{{else}}N/A{{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <i class="bi bi-wallet"></i>
+    <p>No wallets found. Create your first wallet to get started.</p>
+  </div>
+  {{/if}}
+</div>
+

@@ -1,0 +1,251 @@
+/* Basic styles for Safe Wallet */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.admin-body {
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+}
+
+/* Admin Layout Styles */
+.admin-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.admin-sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  margin: 0.25rem 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.nav-link:hover {
+  background-color: #f9fafb;
+  color: #667eea;
+  border-left-color: #667eea;
+}
+
+.nav-link.active {
+  background-color: #f3f4f6;
+  color: #667eea;
+  border-left-color: #667eea;
+  font-weight: 600;
+}
+
+.nav-link i {
+  margin-right: 0.75rem;
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+}
+
+/* Main Content Area */
+.admin-main-content {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.admin-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #374151;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.sidebar-toggle:hover {
+  background-color: #f3f4f6;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-menu span {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Main Content Wrapper */
+.admin-content-wrapper {
+  flex: 1;
+  padding: 0;
+  background-color: #f8f9fa;
+}
+
+/* Footer Styles */
+.admin-footer {
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  margin-top: auto;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Sidebar Overlay (for mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-main-content {
+    margin-left: 0;
+  }
+
+  .sidebar-toggle {
+    display: block;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+}
+
+/* Snackbar Styles */
+#snackbar {
+  visibility: hidden;
+  min-width: 250px;
+  margin-left: -125px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 16px;
+  position: fixed;
+  z-index: 10000;
+  left: 50%;
+  bottom: 30px;
+  font-size: 14px;
+}
+
+#snackbar.show {
+  visibility: visible;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+#snackbar.success {
+  background-color: #10b981;
+}
+
+#snackbar.error {
+  background-color: #ef4444;
+}
+
+#snackbar.info {
+  background-color: #3b82f6;
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}

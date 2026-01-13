@@ -1,0 +1,1010 @@
+<style>
+  .wallets-header {
+    margin-bottom: 2rem;
+  }
+  .wallets-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  .wallets-subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+  }
+  .wallet-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .wallet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+  .wallet-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  .wallet-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .info-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+  .info-value {
+    font-size: 1rem;
+    color: #1a1a1a;
+    font-weight: 600;
+    word-break: break-all;
+    margin-bottom: 1rem;
+  }
+  .info-value code {
+    background: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #667eea;
+    font-weight: 600;
+  }
+  .badge-custom {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table {
+    margin-bottom: 0;
+  }
+  .table thead {
+    background: #f9fafb;
+  }
+  .table thead th {
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    padding: 1rem;
+  }
+  .table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .table tbody tr:hover {
+    background: #f9fafb;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+  .empty-state p {
+    margin: 0;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .btn-create-wallet {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-create-wallet:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+  }
+  .btn-create-wallet:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-create-wallet.loading {
+    position: relative;
+    color: transparent;
+  }
+  .btn-create-wallet.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spinner 0.6s linear infinite;
+  }
+  @keyframes spinner {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<div class="wallets-header">
+  <h1 class="wallets-title">My Wallets</h1>
+  <p class="wallets-subtitle">Manage your wallets and view their details</p>
+</div>
+
+<!-- Vendor Wallet Card -->
+{{#if vendorWallet}}
+<div class="wallet-card">
+  <div class="wallet-card-header">
+    <h3 class="wallet-card-title">
+      <i class="bi bi-shield-lock"></i>
+      Vendor Wallet (Level 2)
+    </h3>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#sendModal">
+        <i class="bi bi-send"></i> Send
+      </button>
+      <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#multiSendModal">
+        <i class="bi bi-send-fill"></i> Multi-Send
+      </button>
+      <span class="badge badge-custom bg-success">Level {{vendorWallet.level}}</span>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <div class="info-label">Wallet Address</div>
+      <div class="info-value">
+        <code>{{vendorWallet.address}}</code>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="info-label">Tracking ID</div>
+      <div class="info-value">
+        <code>{{vendorWallet.tracking_id}}</code>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="info-label">Type</div>
+      <div class="info-value">
+        <span class="badge badge-custom bg-info">{{vendorWallet.type}}</span>
+      </div>
+    </div>
+    {{#if vendorWallet.created_at}}
+    <div class="col-md-6 mb-3">
+      <div class="info-label">Created At</div>
+      <div class="info-value">{{vendorWallet.created_at}}</div>
+    </div>
+    {{/if}}
+    <div class="col-md-12 mb-3">
+      <div class="info-label">Deployment Status</div>
+      <div class="info-value">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <div>
+            <span class="badge badge-custom {{#if vendorWallet.deployments.eth.isDeployed}}bg-success{{else}}bg-warning{{/if}}">
+              Ethereum: {{#if vendorWallet.deployments.eth.isDeployed}}Deployed{{else}}Pending{{/if}}
+            </span>
+            {{#unless vendorWallet.deployments.eth.isDeployed}}
+              <button class="btn btn-sm btn-primary ms-2 deploy-btn" data-wallet-id="{{vendorWallet.id}}" data-chain="eth">
+                <i class="bi bi-cloud-upload"></i> Deploy Now
+              </button>
+            {{/unless}}
+          </div>
+          <div>
+            <span class="badge badge-custom {{#if vendorWallet.deployments.bsc.isDeployed}}bg-success{{else}}bg-warning{{/if}}">
+              BSC: {{#if vendorWallet.deployments.bsc.isDeployed}}Deployed{{else}}Pending{{/if}}
+            </span>
+            {{#unless vendorWallet.deployments.bsc.isDeployed}}
+              <button class="btn btn-sm btn-primary ms-2 deploy-btn" data-wallet-id="{{vendorWallet.id}}" data-chain="bsc">
+                <i class="bi bi-cloud-upload"></i> Deploy Now
+              </button>
+            {{/unless}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{else}}
+<div class="wallet-card">
+  <div class="empty-state">
+    <i class="bi bi-shield-lock"></i>
+    <p>No vendor wallet found. Create your vendor wallet to get started.</p>
+    <button id="createVendorWalletBtn" class="btn-create-wallet">
+      <i class="bi bi-plus-circle"></i>
+      Create Vendor Wallet
+    </button>
+  </div>
+</div>
+{{/if}}
+
+<!-- User Wallets Table -->
+<div class="wallet-card">
+  <div class="wallet-card-header">
+    <h3 class="wallet-card-title">
+      <i class="bi bi-wallet2"></i>
+      Your Wallets (Level 3)
+    </h3>
+  </div>
+  
+  {{#if wallets}}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Address</th>
+          <th>Type</th>
+          <th>Level</th>
+          <th>Label</th>
+          <th>Purpose</th>
+          <th>Created At</th>
+          <th>Deployment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each wallets}}
+        <tr>
+          <td>{{this.index}}</td>
+          <td>
+            <code style="font-size: 0.85rem;">{{this.address}}</code>
+          </td>
+          <td>
+            <span class="badge badge-custom bg-info">{{this.type}}</span>
+          </td>
+          <td>
+            <span class="badge badge-custom bg-success">Level {{this.level}}</span>
+          </td>
+          <td>{{this.label}}</td>
+          <td>
+            <span class="badge badge-custom bg-secondary">{{this.purpose}}</span>
+          </td>
+          <td>
+            {{#if this.created_at}}{{this.created_at}}{{else}}N/A{{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <i class="bi bi-wallet"></i>
+    <p>No wallets found. Create your first wallet to get started.</p>
+  </div>
+  {{/if}}
+</div>
+
+<!-- Transactions Table -->
+<div class="wallet-card">
+  <div class="wallet-card-header">
+    <h3 class="wallet-card-title">
+      <i class="bi bi-clock-history"></i>
+      Recent Transactions
+    </h3>
+  </div>
+  
+  {{#if transactions}}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Amount</th>
+          <th>Chain</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each transactions}}
+        <tr>
+          <td>
+            <span class="badge badge-custom {{#if (eq this.mode 'SEND')}}bg-primary{{else}}bg-success{{/if}}">
+              {{this.mode}}
+            </span>
+          </td>
+          <td>
+            <code style="font-size: 0.75rem;">{{this.fromAddress}}</code>
+          </td>
+          <td>
+            {{#if this.recipients}}
+              <span class="badge badge-custom bg-info">{{this.recipients.length}} recipients</span>
+            {{else}}
+              <code style="font-size: 0.75rem;">{{this.toAddress}}</code>
+            {{/if}}
+          </td>
+          <td>
+            <strong>{{this.amount}}</strong>
+            {{#if this.tokenAddress}}
+              <br><small class="text-muted">Token</small>
+            {{else}}
+              <br><small class="text-muted">Native</small>
+            {{/if}}
+          </td>
+          <td>
+            <span class="badge badge-custom bg-secondary">{{this.chain}}</span>
+          </td>
+          <td>
+            <span class="badge badge-custom 
+              {{#if (eq this.status 'SUCCESS')}}bg-success
+              {{else if (eq this.status 'FAILED')}}bg-danger
+              {{else if (eq this.status 'PROCESSING')}}bg-warning
+              {{else}}bg-secondary{{/if}}">
+              {{this.status}}
+            </span>
+          </td>
+          <td>
+            {{#if this.created_at}}{{this.created_at}}{{else}}N/A{{/if}}
+          </td>
+          <td>
+            {{#if this.taskUrl}}
+              <a href="{{this.taskUrl}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-box-arrow-up-right"></i> View
+              </a>
+            {{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <i class="bi bi-clock-history"></i>
+    <p>No transactions found. Your transaction history will appear here.</p>
+  </div>
+  {{/if}}
+</div>
+
+<script>
+  // Create Vendor Wallet functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const createBtn = document.getElementById('createVendorWalletBtn');
+    
+    if (createBtn) {
+      createBtn.addEventListener('click', async function() {
+        // Disable button and show loading
+        createBtn.disabled = true;
+        createBtn.classList.add('loading');
+        
+        try {
+          const response = await axios.post('/wallets/vendor/create', {}, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            withCredentials: true
+          });
+          
+          if (response.data.success) {
+            // Show success message
+            if (window.showSnackbar) {
+              window.showSnackbar(response.data.message || 'Vendor wallet created successfully', 'success');
+            }
+            
+            // Redirect to refresh page
+            setTimeout(() => {
+              window.location.href = response.data.redirect || '/wallets';
+            }, 1000);
+          }
+        } catch (error) {
+          // Re-enable button
+          createBtn.disabled = false;
+          createBtn.classList.remove('loading');
+          
+          // Show error message
+          const errorMsg = error.response?.data?.message || 'Failed to create vendor wallet. Please try again.';
+          if (window.showSnackbar) {
+            window.showSnackbar(errorMsg, 'error');
+          } else {
+            alert(errorMsg);
+          }
+        }
+      });
+    }
+  });
+</script>
+
+<!-- Send Modal -->
+<div class="modal fade" id="sendModal" tabindex="-1" aria-labelledby="sendModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sendModalLabel">
+          <i class="bi bi-send me-2"></i>Send Transaction
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="sendForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="sendToAddress" class="form-label">To Address <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="sendToAddress" name="toAddress" placeholder="0x..." required>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="mb-3">
+            <label for="sendAmount" class="form-label">Amount <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="sendAmount" name="amount" placeholder="1.0" required>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="mb-3">
+            <label for="sendChain" class="form-label">Chain <span class="text-danger">*</span></label>
+            <select class="form-select" id="sendChain" name="chain" required>
+              <option value="">Select chain</option>
+              {{#each chains}}
+              <option value="{{this.code}}" data-chain-id="{{this.chainId}}">{{this.name}}</option>
+              {{/each}}
+            </select>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="mb-3">
+            <label for="sendCoin" class="form-label">Coin/Token <span class="text-danger">*</span></label>
+            <select class="form-select" id="sendCoin" name="coin" required>
+              <option value="">Select coin</option>
+            </select>
+            <input type="hidden" id="sendTokenAddress" name="tokenAddress" value="">
+            <small class="form-text text-muted">Select a coin or token to send</small>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="sendSubmitBtn">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Send Transaction
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Multi-Send Modal -->
+<div class="modal fade" id="multiSendModal" tabindex="-1" aria-labelledby="multiSendModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="multiSendModalLabel">
+          <i class="bi bi-send-fill me-2"></i>Multi-Send Transaction
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="multiSendForm">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="multiSendChain" class="form-label">Chain <span class="text-danger">*</span></label>
+            <select class="form-select" id="multiSendChain" name="chain" required>
+              <option value="">Select chain</option>
+              {{#each chains}}
+              <option value="{{this.code}}" data-chain-id="{{this.chainId}}">{{this.name}}</option>
+              {{/each}}
+            </select>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Recipients <span class="text-danger">*</span></label>
+            <div id="recipientsContainer">
+              <div class="recipient-item mb-3 p-3 border rounded">
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label class="form-label small">Recipient Address</label>
+                    <input type="text" class="form-control recipient-address" placeholder="0x..." required>
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small">Amount</label>
+                    <input type="text" class="form-control recipient-amount" placeholder="1.0" required>
+                    <div class="invalid-feedback"></div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small">Coin/Token</label>
+                    <select class="form-select recipient-coin" required>
+                      <option value="">Select coin</option>
+                    </select>
+                    <input type="hidden" class="recipient-token" value="">
+                    <div class="invalid-feedback"></div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger mt-2 remove-recipient" style="display: none;">
+                  <i class="bi bi-trash"></i> Remove
+                </button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="addRecipientBtn">
+              <i class="bi bi-plus-circle"></i> Add Recipient
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success" id="multiSendSubmitBtn">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            Send Transactions
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .recipient-item {
+    background: #f9fafb;
+  }
+  .recipient-item:first-child .remove-recipient {
+    display: none !important;
+  }
+</style>
+
+<script>
+  // Store coins data globally
+  const coinsData = {{{json coins}}};
+  const chainsData = {{{json chains}}};
+  
+  // Function to filter coins by chain
+  function getCoinsByChain(chainCode) {
+    if (!chainCode) return [];
+    return coinsData.filter(coin => coin.chain && coin.chain.code === chainCode);
+  }
+  
+  // Function to populate coin select
+  function populateCoinSelect(selectElement, chainCode) {
+    const coins = getCoinsByChain(chainCode);
+    selectElement.innerHTML = '<option value="">Select coin</option>';
+    
+    coins.forEach(coin => {
+      const option = document.createElement('option');
+      option.value = coin.contractAddress;
+      option.textContent = `${coin.symbol} (${coin.name})`;
+      option.dataset.decimals = coin.decimals;
+      option.dataset.isNative = coin.isNative;
+      selectElement.appendChild(option);
+    });
+  }
+  
+  // Send Form Handler
+  document.addEventListener('DOMContentLoaded', function() {
+    const sendForm = document.getElementById('sendForm');
+    const sendSubmitBtn = document.getElementById('sendSubmitBtn');
+    const sendChainSelect = document.getElementById('sendChain');
+    const sendCoinSelect = document.getElementById('sendCoin');
+    const sendTokenAddressInput = document.getElementById('sendTokenAddress');
+    
+    // Handle chain change for send form
+    if (sendChainSelect) {
+      sendChainSelect.addEventListener('change', function() {
+        const chainCode = this.value;
+        populateCoinSelect(sendCoinSelect, chainCode);
+        sendTokenAddressInput.value = '';
+      });
+      
+      // Handle coin change for send form
+      sendCoinSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          sendTokenAddressInput.value = selectedOption.value;
+        } else {
+          sendTokenAddressInput.value = '';
+        }
+      });
+    }
+    
+    if (sendForm) {
+      sendForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        sendForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Disable submit button
+        sendSubmitBtn.disabled = true;
+        sendSubmitBtn.querySelector('.spinner-border').classList.remove('d-none');
+        
+        const tokenAddress = sendTokenAddressInput.value.trim();
+        const formData = {
+          toAddress: document.getElementById('sendToAddress').value.trim(),
+          amount: document.getElementById('sendAmount').value.trim(),
+          tokenAddress: tokenAddress && tokenAddress !== '0x0000000000000000000000000000000000000000' ? tokenAddress : undefined,
+          chain: sendChainSelect.value,
+        };
+        
+        try {
+          const response = await axios.post('/wallets/send', formData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            withCredentials: true
+          });
+          
+          if (response.data.status === 'success') {
+            // Show success message
+            if (window.showSnackbar) {
+              window.showSnackbar('Transaction sent successfully! Task ID: ' + response.data.taskId, 'success');
+            } else {
+              alert('Transaction sent successfully! Task ID: ' + response.data.taskId);
+            }
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('sendModal'));
+            modal.hide();
+            sendForm.reset();
+            
+            // Optionally redirect to task URL
+            if (response.data.taskUrl) {
+              setTimeout(() => {
+                window.open(response.data.taskUrl, '_blank');
+              }, 1000);
+            }
+          }
+        } catch (error) {
+          const errorData = error.response?.data;
+          
+          // Handle validation errors
+          if (errorData?.message && typeof errorData.message === 'object') {
+            Object.keys(errorData.message).forEach(field => {
+              const input = sendForm.querySelector(`[name="${field}"]`);
+              if (input) {
+                input.classList.add('is-invalid');
+                const feedback = input.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                  feedback.textContent = Array.isArray(errorData.message[field]) 
+                    ? errorData.message[field][0] 
+                    : errorData.message[field];
+                }
+              }
+            });
+          } else {
+            const errorMsg = errorData?.message || 'Failed to send transaction. Please try again.';
+            if (window.showSnackbar) {
+              window.showSnackbar(errorMsg, 'error');
+            } else {
+              alert(errorMsg);
+            }
+          }
+        } finally {
+          sendSubmitBtn.disabled = false;
+          sendSubmitBtn.querySelector('.spinner-border').classList.add('d-none');
+        }
+      });
+    }
+    
+    // Multi-Send Form Handler
+    const multiSendForm = document.getElementById('multiSendForm');
+    const multiSendSubmitBtn = document.getElementById('multiSendSubmitBtn');
+    const addRecipientBtn = document.getElementById('addRecipientBtn');
+    const recipientsContainer = document.getElementById('recipientsContainer');
+    const multiSendChainSelect = document.getElementById('multiSendChain');
+    
+    // Handle chain change for multi-send form
+    if (multiSendChainSelect) {
+      multiSendChainSelect.addEventListener('change', function() {
+        const chainCode = this.value;
+        // Update all coin selects in recipients
+        recipientsContainer.querySelectorAll('.recipient-coin').forEach(select => {
+          populateCoinSelect(select, chainCode);
+        });
+      });
+    }
+    
+    // Function to create recipient HTML with coin select
+    function createRecipientHtml() {
+      const chainCode = multiSendChainSelect ? multiSendChainSelect.value : '';
+      const coins = getCoinsByChain(chainCode);
+      let coinOptions = '<option value="">Select coin</option>';
+      coins.forEach(coin => {
+        coinOptions += `<option value="${coin.contractAddress}" data-decimals="${coin.decimals}" data-is-native="${coin.isNative}">${coin.symbol} (${coin.name})</option>`;
+      });
+      
+      return `
+        <div class="recipient-item mb-3 p-3 border rounded">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label small">Recipient Address</label>
+              <input type="text" class="form-control recipient-address" placeholder="0x..." required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Amount</label>
+              <input type="text" class="form-control recipient-amount" placeholder="1.0" required>
+              <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Coin/Token</label>
+              <select class="form-select recipient-coin" required>
+                ${coinOptions}
+              </select>
+              <input type="hidden" class="recipient-token" value="">
+              <div class="invalid-feedback"></div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-danger mt-2 remove-recipient">
+            <i class="bi bi-trash"></i> Remove
+          </button>
+        </div>
+      `;
+    }
+    
+    // Add recipient
+    if (addRecipientBtn) {
+      addRecipientBtn.addEventListener('click', function() {
+        recipientsContainer.insertAdjacentHTML('beforeend', createRecipientHtml());
+        
+        // Add event listener to new coin select
+        const newCoinSelect = recipientsContainer.querySelector('.recipient-item:last-child .recipient-coin');
+        const newTokenInput = recipientsContainer.querySelector('.recipient-item:last-child .recipient-token');
+        if (newCoinSelect && newTokenInput) {
+          newCoinSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+              newTokenInput.value = selectedOption.value;
+            } else {
+              newTokenInput.value = '';
+            }
+          });
+        }
+        
+        // Update remove buttons visibility
+        updateRemoveButtons();
+      });
+    }
+    
+    // Handle coin change for existing recipients
+    recipientsContainer.addEventListener('change', function(e) {
+      if (e.target.classList.contains('recipient-coin')) {
+        const tokenInput = e.target.closest('.recipient-item').querySelector('.recipient-token');
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (tokenInput) {
+          if (selectedOption && selectedOption.value) {
+            tokenInput.value = selectedOption.value;
+          } else {
+            tokenInput.value = '';
+          }
+        }
+      }
+    });
+    
+    // Remove recipient
+    if (recipientsContainer) {
+      recipientsContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-recipient')) {
+          e.target.closest('.recipient-item').remove();
+          updateRemoveButtons();
+        }
+      });
+    }
+    
+    function updateRemoveButtons() {
+      const recipientItems = recipientsContainer.querySelectorAll('.recipient-item');
+      recipientItems.forEach((item, index) => {
+        const removeBtn = item.querySelector('.remove-recipient');
+        if (removeBtn) {
+          removeBtn.style.display = index === 0 ? 'none' : 'block';
+        }
+      });
+    }
+    
+    // Submit multi-send form
+    if (multiSendForm) {
+      multiSendForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        multiSendForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Collect recipients
+        const recipients = [];
+        const recipientItems = recipientsContainer.querySelectorAll('.recipient-item');
+        
+        recipientItems.forEach(item => {
+          const address = item.querySelector('.recipient-address').value.trim();
+          const amount = item.querySelector('.recipient-amount').value.trim();
+          const token = item.querySelector('.recipient-token').value.trim();
+          
+          if (address && amount) {
+            recipients.push({
+              recipient: address,
+              amount: amount,
+              tokenAddress: token && token !== '0x0000000000000000000000000000000000000000' ? token : undefined,
+            });
+          }
+        });
+        
+        if (recipients.length === 0) {
+          if (window.showSnackbar) {
+            window.showSnackbar('Please add at least one recipient', 'error');
+          } else {
+            alert('Please add at least one recipient');
+          }
+          return;
+        }
+        
+        // Disable submit button
+        multiSendSubmitBtn.disabled = true;
+        multiSendSubmitBtn.querySelector('.spinner-border').classList.remove('d-none');
+        
+        const formData = {
+          recipients: recipients,
+          chain: document.getElementById('multiSendChain').value,
+        };
+        
+        try {
+          const response = await axios.post('/wallets/multi-send', formData, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            withCredentials: true
+          });
+          
+          if (response.data.status === 'success') {
+            // Show success message
+            if (window.showSnackbar) {
+              window.showSnackbar(`Successfully sent ${response.data.recipients} transactions! Task ID: ${response.data.taskId}`, 'success');
+            } else {
+              alert(`Successfully sent ${response.data.recipients} transactions! Task ID: ${response.data.taskId}`);
+            }
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('multiSendModal'));
+            modal.hide();
+            multiSendForm.reset();
+            
+            // Reset recipients to one
+            recipientsContainer.innerHTML = createRecipientHtml();
+            
+            // Add event listener to reset coin select
+            const resetCoinSelect = recipientsContainer.querySelector('.recipient-coin');
+            const resetTokenInput = recipientsContainer.querySelector('.recipient-token');
+            if (resetCoinSelect && resetTokenInput) {
+              resetCoinSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                  resetTokenInput.value = selectedOption.value;
+                } else {
+                  resetTokenInput.value = '';
+                }
+              });
+            }
+            
+            // Optionally redirect to task URL
+            if (response.data.taskUrl) {
+              setTimeout(() => {
+                window.open(response.data.taskUrl, '_blank');
+              }, 1000);
+            }
+          }
+        } catch (error) {
+          const errorData = error.response?.data;
+          
+          // Handle validation errors
+          if (errorData?.message && typeof errorData.message === 'object') {
+            Object.keys(errorData.message).forEach(field => {
+              const input = multiSendForm.querySelector(`[name="${field}"]`);
+              if (input) {
+                input.classList.add('is-invalid');
+                const feedback = input.nextElementSibling;
+                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                  feedback.textContent = Array.isArray(errorData.message[field]) 
+                    ? errorData.message[field][0] 
+                    : errorData.message[field];
+                }
+              }
+            });
+          } else {
+            const errorMsg = errorData?.message || 'Failed to send transactions. Please try again.';
+            if (window.showSnackbar) {
+              window.showSnackbar(errorMsg, 'error');
+            } else {
+              alert(errorMsg);
+            }
+          }
+        } finally {
+          multiSendSubmitBtn.disabled = false;
+          multiSendSubmitBtn.querySelector('.spinner-border').classList.add('d-none');
+        }
+      });
+    }
+
+    // Deploy Wallet functionality
+    const deployButtons = document.querySelectorAll('.deploy-btn');
+    deployButtons.forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const walletId = this.getAttribute('data-wallet-id');
+        const chain = this.getAttribute('data-chain');
+        
+        if (!walletId || !chain) {
+          return;
+        }
+
+        // Disable button and show loading
+        const originalText = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Deploying...';
+
+        try {
+          const response = await axios.post(`/wallets/${walletId}/deploy/${chain}`, {}, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            withCredentials: true
+          });
+          
+          if (response.data.isDeployed) {
+            // Show success message
+            if (window.showSnackbar) {
+              window.showSnackbar(`Wallet deployed successfully on ${chain.toUpperCase()}!`, 'success');
+            } else {
+              alert(`Wallet deployed successfully on ${chain.toUpperCase()}!`);
+            }
+            
+            // Reload page to show updated status
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            throw new Error(response.data.message || 'Deployment failed');
+          }
+        } catch (error) {
+          // Re-enable button
+          this.disabled = false;
+          this.innerHTML = originalText;
+          
+          // Show error message
+          const errorMsg = error.response?.data?.message || `Failed to deploy wallet on ${chain.toUpperCase()}. Please try again.`;
+          if (window.showSnackbar) {
+            window.showSnackbar(errorMsg, 'error');
+          } else {
+            alert(errorMsg);
+          }
+        }
+      });
+    });
+  });
+</script>
+

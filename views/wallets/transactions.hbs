@@ -1,0 +1,253 @@
+<style>
+  .transactions-header {
+    margin-bottom: 2rem;
+  }
+  .transactions-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  .transactions-subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+  }
+  .transactions-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+  }
+  .transactions-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  .transactions-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table {
+    margin-bottom: 0;
+  }
+  .table thead {
+    background: #f9fafb;
+  }
+  .table thead th {
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    padding: 1rem;
+  }
+  .table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .table tbody tr:hover {
+    background: #f9fafb;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+  .empty-state i {
+    font-size: 3rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+  }
+  .empty-state p {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .badge-custom {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .filter-section {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .filter-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+  }
+</style>
+
+<div class="transactions-header">
+  <h1 class="transactions-title">Transactions</h1>
+  <p class="transactions-subtitle">View your transaction history</p>
+</div>
+
+<div class="transactions-card">
+  <div class="transactions-card-header">
+    <h3 class="transactions-card-title">
+      <i class="bi bi-clock-history"></i>
+      Transaction History
+    </h3>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-group">
+      <label>Status</label>
+      <select id="statusFilter" class="form-select form-select-sm" style="width: 150px;">
+        <option value="">All Status</option>
+        <option value="PENDING">Pending</option>
+        <option value="PROCESSING">Processing</option>
+        <option value="SUCCESS">Success</option>
+        <option value="FAILED">Failed</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Chain</label>
+      <select id="chainFilter" class="form-select form-select-sm" style="width: 150px;">
+        <option value="">All Chains</option>
+        <option value="eth">Ethereum</option>
+        <option value="bsc">BSC</option>
+      </select>
+    </div>
+    <div class="filter-group" style="align-items: flex-end;">
+      <button id="applyFiltersBtn" class="btn btn-primary btn-sm">
+        <i class="bi bi-funnel"></i> Apply Filters
+      </button>
+    </div>
+  </div>
+  
+  {{#if transactions}}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Amount</th>
+          <th>Chain</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="transactionsTableBody">
+        {{#each transactions}}
+        <tr data-status="{{this.status}}" data-chain="{{this.chain}}">
+          <td>
+            <span class="badge badge-custom {{#if (eq this.mode 'SEND')}}bg-primary{{else}}bg-success{{/if}}">
+              {{this.mode}}
+            </span>
+          </td>
+          <td>
+            <code style="font-size: 0.75rem;">{{this.fromAddress}}</code>
+          </td>
+          <td>
+            {{#if this.recipients}}
+              <span class="badge badge-custom bg-info">{{this.recipients.length}} recipients</span>
+            {{else}}
+              <code style="font-size: 0.75rem;">{{this.toAddress}}</code>
+            {{/if}}
+          </td>
+          <td>
+            <strong>{{this.amount}}</strong>
+            {{#if this.tokenAddress}}
+              <br><small class="text-muted">Token</small>
+            {{else}}
+              <br><small class="text-muted">Native</small>
+            {{/if}}
+          </td>
+          <td>
+            <span class="badge badge-custom bg-secondary">{{this.chain}}</span>
+          </td>
+          <td>
+            <span class="badge badge-custom 
+              {{#if (eq this.status 'SUCCESS')}}bg-success
+              {{else if (eq this.status 'FAILED')}}bg-danger
+              {{else if (eq this.status 'PROCESSING')}}bg-warning
+              {{else}}bg-secondary{{/if}}">
+              {{this.status}}
+            </span>
+          </td>
+          <td>
+            {{#if this.created_at}}{{this.created_at}}{{else}}N/A{{/if}}
+          </td>
+          <td>
+            {{#if this.taskUrl}}
+              <a href="{{this.taskUrl}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-box-arrow-up-right"></i> View
+              </a>
+            {{/if}}
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+  {{else}}
+  <div class="empty-state">
+    <i class="bi bi-clock-history"></i>
+    <p>No transactions found. Your transaction history will appear here.</p>
+  </div>
+  {{/if}}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('statusFilter');
+    const chainFilter = document.getElementById('chainFilter');
+    const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+    const transactionsTableBody = document.getElementById('transactionsTableBody');
+
+    if (applyFiltersBtn && transactionsTableBody) {
+      applyFiltersBtn.addEventListener('click', function() {
+        const status = statusFilter.value;
+        const chain = chainFilter.value;
+        const rows = transactionsTableBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+          const rowStatus = row.getAttribute('data-status');
+          const rowChain = row.getAttribute('data-chain');
+          
+          let show = true;
+          
+          if (status && rowStatus !== status) {
+            show = false;
+          }
+          if (chain && rowChain !== chain) {
+            show = false;
+          }
+          
+          row.style.display = show ? '' : 'none';
+        });
+      });
+    }
+  });
+</script>
+
