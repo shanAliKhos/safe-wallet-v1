@@ -15,6 +15,8 @@ import { HomeModule } from './home/home.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { ChainsModule } from './chains/chains.module';
 import { CoinsModule } from './coins/coins.module';
+import { AnkrModule } from './ankr/ankr.module';
+import { BlockchainListenerModule } from './blockchain-listener/blockchain-listener.module';
 import { ChainsSeedService } from './chains/chains.seed';
 import { CoinsSeedService } from './coins/coins.seed';
 import configuration from './config/configuration';
@@ -50,6 +52,8 @@ import { validationSchema } from './config/validation.schema';
     HomeModule,
     ChainsModule,
     CoinsModule,
+    AnkrModule,
+    BlockchainListenerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

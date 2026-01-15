@@ -29,20 +29,36 @@ export const validationSchema = Joi.object({
     .required()
     .min(32)
     .description('Encryption key for private keys (minimum 32 characters)'),
-  SITE_SAFE_PRIVATE_KEY: Joi.string()
-    .required()
-    .description('Site Safe private key (will be encrypted)'),
-  SITE_SAFE_ADDRESS: Joi.string()
-    .optional()
-    .description('Site Safe address (if already deployed)'),
+
   GELATO_API_KEY: Joi.string()
     .optional()
     .description('Gelato API key for gasless transactions'),
+
   ETH_RPC_URL: Joi.string()
-    .required()
+    .optional()
     .description('Ethereum RPC URL'),
   BSC_RPC_URL: Joi.string()
-    .required()
+    .optional()
     .description('BSC RPC URL'),
+
+  ANKR_HTTP_URL: Joi.string()
+    .required()
+    .description('Ankr HTTP URL for the chain'),
+  ANKR_WS_URL: Joi.string()
+    .optional()
+    .description('Ankr WS URL for the chain'),
+  ANKR_RPC_URL: Joi.string()
+    .optional()
+    .description('Ankr RPC URL for the chain'),
+  ANKR_API_URL: Joi.string()
+    .optional()
+    .description('Ankr API URL for the chain'),
+  ANKR_API_TOKEN: Joi.string()
+    .optional()
+    .description('Ankr API token for Query API'),
+  ANKR_BASE_URL: Joi.string()
+    .optional()
+    .default('https://rpc.ankr.com/multichain')
+    .description('Ankr base URL for Token API and Query API'),
 });
 
