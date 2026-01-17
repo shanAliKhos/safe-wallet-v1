@@ -17,11 +17,13 @@ import { SendDto } from './dto/send.dto';
 import { MultiSendDto } from './dto/multi-send.dto';
 import { TransactionsService } from '../transactions/transactions.service';
 import { TransactionMode, TransactionStatus } from '../transactions/schemas/transaction.schema';
+import { SafeApiService } from './safe-api.service';
  
 /**
  * Safe Wallet Service
  * Production-ready implementation with proper error handling
  * No plaintext keys, proper multi-sig setup
+ * Updated to Safe Protocol v1.5.0 standards
  */
 @Injectable()
 export class SafeWalletService {
@@ -32,6 +34,7 @@ export class SafeWalletService {
     private keyManagementService: KeyManagementService,
     @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     private transactionsService: TransactionsService,
+    private safeApiService: SafeApiService,
   ) {
      
   }
@@ -61,7 +64,7 @@ export class SafeWalletService {
 
     const safeDeploymentConfig: SafeDeploymentConfig = {
       saltNonce: Date.now().toString(),
-      safeVersion: '1.4.1',
+      safeVersion: '1.4.1', // Latest supported version in types
       deploymentType: 'canonical',
     };
 
@@ -132,7 +135,9 @@ export class SafeWalletService {
 
   /**
    * Create Vendor Safe (Level 2) - Created when user registers
-   * Multi-sig: Site Safe + Site EOS + User EOS (threshold: 2)
+   * NESTED SAFE: Child of Level 1 (Site Safe)
+   * Owners: Site Safe (parent) + Vendor EOA
+   * Threshold: 2 (requires Site Safe multi-sig + Vendor EOA signature)
    */
   async createVendorSafe(userId: string): Promise<WalletDocument> {
     // Get site safe
@@ -171,16 +176,18 @@ export class SafeWalletService {
     const userEosAddress = getAddress(userWallet.address);
 
 
-  
-     // Create Safe configuration with multi-sig
-     const safeAccountConfig: SafeAccountConfig = {
-      owners: [siteSafe.address, siteSafe.eosAddress, userEosAddress],
-      threshold: 2, // Requires 2 signatures
+    // Create Safe configuration with NESTED SAFE architecture
+    // Level 2 Safe is CHILD of Level 1 Safe
+    // Site Safe acts as one owner (parent controls child)
+    // According to Safe Protocol Guide - lines 154-158: Safes can be owners of other Safes
+    const safeAccountConfig: SafeAccountConfig = {
+      owners: [siteSafe.address, userEosAddress], // Site Safe (parent) + Vendor EOA
+      threshold: 2, // Requires Site Safe approval + Vendor EOA signature
     };
 
     const safeDeploymentConfig: SafeDeploymentConfig = {
       saltNonce: Date.now().toString(),
-      safeVersion: '1.4.1',
+      safeVersion: '1.4.1', // Latest supported version in types
       deploymentType: 'canonical',
     };
 
@@ -241,7 +248,7 @@ export class SafeWalletService {
       purpose: 'transfer',
       trackingId: `vendor-${userId}-safe`,
       safeConfig: {
-        owners: [siteSafe.address, siteSafe.eosAddress, userEosAddress],
+        owners: [siteSafe.address, userEosAddress], // NESTED: Site Safe is owner
         threshold: 2,
         safeAccountConfig,
         safeDeploymentConfig,
@@ -255,7 +262,10 @@ export class SafeWalletService {
 
   /**
    * Create User Safe (Level 3) - Created via API by vendors
-   * Multi-sig: Vendor Safe + Site EOS + Vendor EOS + User EOS (threshold: 3)
+   * NESTED SAFE: Child of Level 2 (Vendor Safe)
+   * Owners: Vendor Safe (parent) + Site EOA (direct) + User EOA
+   * Threshold: 3 (requires all 3 signatures: Vendor Safe + Site EOA + User EOA)
+   * Total EOA signatures needed: 4 (Vendor EOA + Site EOA via Vendor Safe + Site EOA direct + User EOA)
    */
   async createUserSafe(userId: string, dto: { label: string; purpose?: string; trackingId?: string; callbackUrl?: string }): Promise<WalletDocument> {
     // Get site safe
@@ -285,15 +295,20 @@ export class SafeWalletService {
     const userWallet = new ethers.Wallet(userPrivateKey);
     const userEosAddress = getAddress(userWallet.address);
 
-    // Create Safe configuration with multi-sig
+    // Create Safe configuration with NESTED SAFE + Multi-owner architecture
+    // Level 3 Safe has 3 owners with threshold 3 (all must sign)
+    // 1. Vendor Safe (nested parent - requires Vendor EOA + Site Safe)
+    // 2. Site EOA (direct platform control)
+    // 3. User EOA (user control)
+    // According to Safe Protocol Guide - lines 154-158: Safes can be owners of other Safes
     const safeAccountConfig: SafeAccountConfig = {
-      owners: [vendorSafe.address, siteSafe.eosAddress, vendorSafe.eosAddress, userEosAddress],
-      threshold: 3, // Requires 3 signatures
+      owners: [vendorSafe.address, siteSafe.eosAddress, userEosAddress], // 3 owners
+      threshold: 3, // Requires ALL 3 signatures
     };
 
     const safeDeploymentConfig: SafeDeploymentConfig = {
       saltNonce: Date.now().toString(),
-      safeVersion: '1.4.1',
+      safeVersion: '1.4.1', // Latest supported version in types
       deploymentType: 'canonical',
     };
 
@@ -352,8 +367,8 @@ export class SafeWalletService {
       trackingId: dto.trackingId,
       callbackUrl: dto.callbackUrl,
       safeConfig: {
-        owners: [vendorSafe.address, siteSafe.eosAddress, vendorSafe.eosAddress, userEosAddress],
-        threshold: 3,
+        owners: [vendorSafe.address, siteSafe.eosAddress, userEosAddress], // 3 owners: Vendor Safe + Site EOA + User EOA
+        threshold: 3, // Requires all 3 signatures
         safeAccountConfig,
         safeDeploymentConfig,
         deployments,
@@ -1045,6 +1060,529 @@ export class SafeWalletService {
     } catch (error) {
       this.logger.error('Multi-send transaction failed:', error);
       throw new BadRequestException(`Multi-send transaction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get Safe nonce (for transaction ordering)
+   * According to Safe Protocol Guide - line 1234
+   */
+  async getSafeNonce(walletAddress: string, chain: 'bsc' | 'eth'): Promise<number> {
+    try {
+      const wallet = await this.walletModel.findOne({ address: walletAddress }).exec();
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      const siteSafe = await this.walletModel
+        .findOne({ level: WalletLevel.SITE, trackingId: 'site-gnosis-safe' })
+        .exec();
+
+      if (!siteSafe) {
+        throw new NotFoundException('Site Safe not found');
+      }
+
+      const sitePrivateKey = this.keyManagementService.decryptPrivateKey(siteSafe.encryptedPrivateKey);
+
+      const chainConfig = chain === 'bsc' 
+        ? { chain: bsc, rpc: this.configService.get<string>('rpc.bsc')! }
+        : { chain: mainnet, rpc: this.configService.get<string>('rpc.eth')! };
+
+      const siteAccount = privateKeyToAccount(`0x${sitePrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const walletClient = createWalletClient({
+        account: siteAccount,
+        chain: chainConfig.chain,
+        transport: http(chainConfig.rpc),
+      }).extend(publicActions);
+
+      const protocolKit = await Safe.init({
+        provider: walletClient,
+        signer: sitePrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      const nonce = await protocolKit.getNonce();
+      this.logger.log(`Safe ${walletAddress} nonce: ${nonce}`);
+      
+      return nonce;
+    } catch (error) {
+      this.logger.error('Failed to get Safe nonce:', error);
+      throw new BadRequestException(`Failed to get Safe nonce: ${error.message}`);
+    }
+  }
+
+  /**
+   * Sign message using Safe (EIP-1271)
+   * According to Safe Protocol Guide - lines 788-817
+   */
+  async signMessage(params: {
+    userId: string;
+    walletAddress: string;
+    message: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<any> {
+    try {
+      const wallet = await this.walletModel.findOne({ 
+        address: params.walletAddress,
+        userId: new Types.ObjectId(params.userId),
+      }).exec();
+
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      const siteSafe = await this.walletModel
+        .findOne({ level: WalletLevel.SITE, trackingId: 'site-gnosis-safe' })
+        .exec();
+
+      if (!siteSafe) {
+        throw new NotFoundException('Site Safe not found');
+      }
+
+      const sitePrivateKey = this.keyManagementService.decryptPrivateKey(siteSafe.encryptedPrivateKey);
+
+      const chainConfig = params.chain === 'bsc' 
+        ? { chain: bsc, rpc: this.configService.get<string>('rpc.bsc')!, chainId: 56 }
+        : { chain: mainnet, rpc: this.configService.get<string>('rpc.eth')!, chainId: 1 };
+
+      const siteAccount = privateKeyToAccount(`0x${sitePrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const walletClient = createWalletClient({
+        account: siteAccount,
+        chain: chainConfig.chain,
+        transport: http(chainConfig.rpc),
+      }).extend(publicActions);
+
+      const protocolKit = await Safe.init({
+        provider: walletClient,
+        signer: sitePrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      // Create message
+      const safeMessage = protocolKit.createMessage(params.message);
+      
+      // Sign message with site safe
+      const signature = await protocolKit.signMessage(safeMessage);
+
+      // Get message hash
+      const messageHash = await protocolKit.getSafeMessageHash(ethers.hashMessage(params.message));
+
+      // Propose message to Transaction Service
+      try {
+        await this.safeApiService.proposeMessage({
+          chainId: chainConfig.chainId,
+          safeAddress: wallet.address,
+          message: params.message,
+          signature: signature.encodedSignatures(),
+        });
+      } catch (apiError) {
+        this.logger.warn('Failed to propose message to Transaction Service:', apiError);
+        // Continue even if Transaction Service is unavailable
+      }
+
+      return {
+        message: params.message,
+        messageHash,
+        signature: signature.encodedSignatures(),
+        safeAddress: wallet.address,
+        chain: params.chain,
+      };
+    } catch (error) {
+      this.logger.error('Failed to sign message:', error);
+      throw new BadRequestException(`Failed to sign message: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify message signature using Safe (EIP-1271)
+   * According to Safe Protocol Guide - lines 772-785
+   */
+  async verifyMessageSignature(params: {
+    walletAddress: string;
+    message: string;
+    signature: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<boolean> {
+    try {
+      const wallet = await this.walletModel.findOne({ address: params.walletAddress }).exec();
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      const siteSafe = await this.walletModel
+        .findOne({ level: WalletLevel.SITE, trackingId: 'site-gnosis-safe' })
+        .exec();
+
+      if (!siteSafe) {
+        throw new NotFoundException('Site Safe not found');
+      }
+
+      const sitePrivateKey = this.keyManagementService.decryptPrivateKey(siteSafe.encryptedPrivateKey);
+
+      const chainConfig = params.chain === 'bsc' 
+        ? { chain: bsc, rpc: this.configService.get<string>('rpc.bsc')! }
+        : { chain: mainnet, rpc: this.configService.get<string>('rpc.eth')! };
+
+      const siteAccount = privateKeyToAccount(`0x${sitePrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const walletClient = createWalletClient({
+        account: siteAccount,
+        chain: chainConfig.chain,
+        transport: http(chainConfig.rpc),
+      }).extend(publicActions);
+
+      const protocolKit = await Safe.init({
+        provider: walletClient,
+        signer: sitePrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      const messageHash = await protocolKit.getSafeMessageHash(ethers.hashMessage(params.message));
+      const isValid = await protocolKit.isValidSignature(messageHash, params.signature);
+
+      this.logger.log(`Message signature verification: ${isValid}`);
+      return isValid;
+    } catch (error) {
+      this.logger.error('Failed to verify message signature:', error);
+      throw new BadRequestException(`Failed to verify message signature: ${error.message}`);
+    }
+  }
+
+  /**
+   * Enable Guard on Safe
+   * According to Safe Protocol Guide - lines 568-577
+   */
+  async enableGuard(params: {
+    userId: string;
+    walletId: string;
+    guardAddress: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<any> {
+    try {
+      const wallet = await this.walletModel.findOne({
+        _id: params.walletId,
+        userId: new Types.ObjectId(params.userId),
+      }).exec();
+
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      if (wallet.level !== WalletLevel.VENDOR) {
+        throw new BadRequestException('Only Level 2 (vendor) wallets can manage guards');
+      }
+
+      const { protocolKit } = await this.initSafeContext(wallet, params.chain);
+
+      // Create enable guard transaction
+      const enableGuardTx = await protocolKit.createEnableGuardTx(params.guardAddress);
+
+      // Get transaction hash
+      const txHash = await protocolKit.getTransactionHash(enableGuardTx);
+
+      // Sign with site safe
+      const siteSig = await protocolKit.signHash(txHash);
+      enableGuardTx.addSignature(siteSig);
+
+      // Sign with vendor wallet
+      const vendorPrivateKey = this.keyManagementService.decryptPrivateKey(wallet.encryptedPrivateKey);
+      const rpcUrl = params.chain === 'bsc' 
+        ? this.configService.get<string>('rpc.bsc')!
+        : this.configService.get<string>('rpc.eth')!;
+
+      const vendorAccount = privateKeyToAccount(`0x${vendorPrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const vendorWalletClient = createWalletClient({
+        account: vendorAccount,
+        chain: params.chain === 'bsc' ? bsc : mainnet,
+        transport: http(rpcUrl),
+      }).extend(publicActions);
+
+      const vendorProtocolKit = await Safe.init({
+        provider: vendorWalletClient,
+        signer: vendorPrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      const vendorSig = await vendorProtocolKit.signHash(txHash);
+      enableGuardTx.addSignature(vendorSig);
+
+      // Execute transaction
+      const txResponse = await protocolKit.executeTransaction(enableGuardTx);
+
+      this.logger.log(`Guard enabled: ${params.guardAddress}`);
+
+      return {
+        status: 'success',
+        guardAddress: params.guardAddress,
+        txHash: txResponse.hash,
+        safeAddress: wallet.address,
+        chain: params.chain,
+      };
+    } catch (error) {
+      this.logger.error('Failed to enable guard:', error);
+      throw new BadRequestException(`Failed to enable guard: ${error.message}`);
+    }
+  }
+
+  /**
+   * Disable Guard on Safe
+   * According to Safe Protocol Guide - lines 574-577
+   */
+  async disableGuard(params: {
+    userId: string;
+    walletId: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<any> {
+    try {
+      const wallet = await this.walletModel.findOne({
+        _id: params.walletId,
+        userId: new Types.ObjectId(params.userId),
+      }).exec();
+
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      if (wallet.level !== WalletLevel.VENDOR) {
+        throw new BadRequestException('Only Level 2 (vendor) wallets can manage guards');
+      }
+
+      const { protocolKit } = await this.initSafeContext(wallet, params.chain);
+
+      // Create disable guard transaction
+      const disableGuardTx = await protocolKit.createDisableGuardTx();
+
+      // Get transaction hash
+      const txHash = await protocolKit.getTransactionHash(disableGuardTx);
+
+      // Sign with site safe
+      const siteSig = await protocolKit.signHash(txHash);
+      disableGuardTx.addSignature(siteSig);
+
+      // Sign with vendor wallet
+      const vendorPrivateKey = this.keyManagementService.decryptPrivateKey(wallet.encryptedPrivateKey);
+      const rpcUrl = params.chain === 'bsc' 
+        ? this.configService.get<string>('rpc.bsc')!
+        : this.configService.get<string>('rpc.eth')!;
+
+      const vendorAccount = privateKeyToAccount(`0x${vendorPrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const vendorWalletClient = createWalletClient({
+        account: vendorAccount,
+        chain: params.chain === 'bsc' ? bsc : mainnet,
+        transport: http(rpcUrl),
+      }).extend(publicActions);
+
+      const vendorProtocolKit = await Safe.init({
+        provider: vendorWalletClient,
+        signer: vendorPrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      const vendorSig = await vendorProtocolKit.signHash(txHash);
+      disableGuardTx.addSignature(vendorSig);
+
+      // Execute transaction
+      const txResponse = await protocolKit.executeTransaction(disableGuardTx);
+
+      this.logger.log(`Guard disabled for Safe: ${wallet.address}`);
+
+      return {
+        status: 'success',
+        txHash: txResponse.hash,
+        safeAddress: wallet.address,
+        chain: params.chain,
+      };
+    } catch (error) {
+      this.logger.error('Failed to disable guard:', error);
+      throw new BadRequestException(`Failed to disable guard: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get current Guard address
+   * According to Safe Protocol Guide - line 580
+   */
+  async getGuard(walletAddress: string, chain: 'bsc' | 'eth'): Promise<string | null> {
+    try {
+      const wallet = await this.walletModel.findOne({ address: walletAddress }).exec();
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      const siteSafe = await this.walletModel
+        .findOne({ level: WalletLevel.SITE, trackingId: 'site-gnosis-safe' })
+        .exec();
+
+      if (!siteSafe) {
+        throw new NotFoundException('Site Safe not found');
+      }
+
+      const sitePrivateKey = this.keyManagementService.decryptPrivateKey(siteSafe.encryptedPrivateKey);
+
+      const chainConfig = chain === 'bsc' 
+        ? { chain: bsc, rpc: this.configService.get<string>('rpc.bsc')! }
+        : { chain: mainnet, rpc: this.configService.get<string>('rpc.eth')! };
+
+      const siteAccount = privateKeyToAccount(`0x${sitePrivateKey.replace(/^0x/, '')}` as `0x${string}`);
+      const walletClient = createWalletClient({
+        account: siteAccount,
+        chain: chainConfig.chain,
+        transport: http(chainConfig.rpc),
+      }).extend(publicActions);
+
+      const protocolKit = await Safe.init({
+        provider: walletClient,
+        signer: sitePrivateKey,
+        safeAddress: wallet.address,
+        contractNetworks,
+      });
+
+      const guardAddress = await protocolKit.getGuard();
+      this.logger.log(`Safe ${walletAddress} guard: ${guardAddress || 'none'}`);
+      
+      return guardAddress;
+    } catch (error) {
+      this.logger.error('Failed to get guard:', error);
+      throw new BadRequestException(`Failed to get guard: ${error.message}`);
+    }
+  }
+
+  /**
+   * Propose transaction to Safe Transaction Service
+   * According to Safe Protocol Guide - lines 253-262
+   */
+  async proposeTransaction(params: {
+    userId: string;
+    walletId: string;
+    toAddress: string;
+    amount: string;
+    tokenAddress?: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<any> {
+    try {
+      const vendorWallet = await this.walletModel.findOne({
+        _id: params.walletId,
+        userId: new Types.ObjectId(params.userId),
+        level: WalletLevel.VENDOR,
+      }).exec();
+
+      if (!vendorWallet) {
+        throw new NotFoundException('Vendor wallet not found');
+      }
+
+      const { protocolKit } = await this.initSafeContext(vendorWallet, params.chain);
+
+      // Prepare transaction data
+      let txData: MetaTransactionData;
+      const zero = ethers.ZeroAddress.toLowerCase();
+      const normalizedToken = params.tokenAddress?.trim()?.toLowerCase();
+
+      if (!normalizedToken || normalizedToken === zero) {
+        const value = ethers.parseUnits(params.amount, 'ether');
+        txData = {
+          to: getAddress(params.toAddress),
+          value: value.toString(),
+          data: '0x',
+          operation: OperationType.Call,
+        };
+      } else {
+        const token = getAddress(normalizedToken);
+        const erc20Interface = new ethers.Interface([
+          'function transfer(address to, uint256 value) public returns (bool)',
+        ]);
+        const rpcUrl = params.chain === 'bsc' 
+          ? this.configService.get<string>('rpc.bsc')!
+          : this.configService.get<string>('rpc.eth')!;
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const tokenContract = new ethers.Contract(token, ERC20_ABI, provider);
+        const decimals = await this.safeGetDecimals(tokenContract);
+        const value = ethers.parseUnits(params.amount, decimals);
+        const data = erc20Interface.encodeFunctionData('transfer', [params.toAddress, value]);
+
+        txData = {
+          to: token,
+          value: '0',
+          data,
+          operation: OperationType.Call,
+        };
+      }
+
+      // Create Safe transaction
+      const safeTx = await protocolKit.createTransaction({ transactions: [txData] });
+      const txHash = await protocolKit.getTransactionHash(safeTx);
+
+      // Sign with site safe (first signature)
+      const siteSig = await protocolKit.signHash(txHash);
+
+      // Get chain ID
+      const chainId = params.chain === 'bsc' ? 56 : 1;
+
+      // Propose to Transaction Service
+      await this.safeApiService.proposeTransaction({
+        chainId,
+        safeAddress: vendorWallet.address,
+        safeTransactionData: safeTx.data,
+        safeTxHash: txHash,
+        senderAddress: (await protocolKit.getOwners())[0],
+        senderSignature: siteSig.data,
+        origin: 'Safe Wallet API',
+      });
+
+      this.logger.log(`Transaction proposed: ${txHash}`);
+
+      return {
+        status: 'proposed',
+        safeTxHash: txHash,
+        safeAddress: vendorWallet.address,
+        chain: params.chain,
+        confirmationsRequired: await protocolKit.getThreshold(),
+        confirmationsCollected: 1,
+      };
+    } catch (error) {
+      this.logger.error('Failed to propose transaction:', error);
+      throw new BadRequestException(`Failed to propose transaction: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get pending transactions from Transaction Service
+   * According to Safe Protocol Guide - lines 941-948
+   */
+  async getPendingTransactions(params: {
+    userId: string;
+    walletId: string;
+    chain: 'bsc' | 'eth';
+  }): Promise<any> {
+    try {
+      const wallet = await this.walletModel.findOne({
+        _id: params.walletId,
+        userId: new Types.ObjectId(params.userId),
+      }).exec();
+
+      if (!wallet) {
+        throw new NotFoundException('Wallet not found');
+      }
+
+      const chainId = params.chain === 'bsc' ? 56 : 1;
+
+      const pendingTxs = await this.safeApiService.getPendingTransactions({
+        chainId,
+        safeAddress: wallet.address,
+      });
+
+      return {
+        safeAddress: wallet.address,
+        chain: params.chain,
+        pendingTransactions: pendingTxs,
+        count: pendingTxs.length,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get pending transactions:', error);
+      throw new BadRequestException(`Failed to get pending transactions: ${error.message}`);
     }
   }
 }

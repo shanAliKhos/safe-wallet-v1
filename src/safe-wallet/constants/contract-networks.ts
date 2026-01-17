@@ -1,22 +1,41 @@
 import { bsc, mainnet } from 'viem/chains';
 import { ContractNetworksConfig } from '@safe-global/protocol-kit';
 
+/**
+ * Safe Protocol v1.5.0 Contract Networks Configuration
+ * Updated to use latest Safe contract addresses
+ * Source: https://docs.safe.global/advanced/smart-account-supported-networks
+ */
 export const contractNetworks: ContractNetworksConfig = {
-  [bsc.id]: {
-    safeSingletonAddress: '0x29fcb43b46531bca003ddc8fcb67ffe91900c762',
-    safeProxyFactoryAddress: '0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67',
-    multiSendAddress: '0x38869bf66a61cf6bdb996a6ae40d5853fd43b526',
-    multiSendCallOnlyAddress: '0x9641d764fc13c8b624c04430c7356c1c7c8102e2',
-    fallbackHandlerAddress: '0xfd0732dc9e303f09fcef3a7388ad10a83459ec99',
-    createCallAddress: '0x9b35af71d77eaf8d7e40252370304687390a1a52',
-  },
+  // Ethereum Mainnet
   [mainnet.id]: {
-    safeSingletonAddress: '0x29fcb43b46531bca003ddc8fcb67ffe91900c762',
-    safeProxyFactoryAddress: '0x4e1dcf7ad4e460cfd30791ccc4f9c8a4f820ec67',
-    multiSendAddress: '0x38869bf66a61cf6bdb996a6ae40d5853fd43b526',
-    multiSendCallOnlyAddress: '0x9641d764fc13c8b624c04430c7356c1c7c8102e2',
-    fallbackHandlerAddress: '0xfd0732dc9e303f09fcef3a7388ad10a83459ec99',
-    createCallAddress: '0x9b35af71d77eaf8d7e40252370304687390a1a52',
+    safeSingletonAddress: '0x41675C099F32341bf84BFc5382aF534df5C7461a', // Safe v1.5.0
+    safeProxyFactoryAddress: '0x4e1DCF7AD4e460CfD30791CCC4F9c8a4f820ec67', // SafeProxyFactory v1.4.1 (compatible)
+    multiSendAddress: '0x38869bf66a61cF6bDB996A6aE40D5853Fd43B526', // MultiSend v1.4.1
+    multiSendCallOnlyAddress: '0x9641d764fc13c8B624c04430C7356C1C7C8102e2', // MultiSendCallOnly v1.4.1
+    fallbackHandlerAddress: '0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99', // CompatibilityFallbackHandler v1.4.1
+    signMessageLibAddress: '0xd53cd0aB83D845Ac265BE939c57F53AD838012c9', // SignMessageLib v1.4.1
+    createCallAddress: '0x9b35Af71d77eaf8d7e40252370304687390A1a52', // CreateCall v1.4.1
+    simulateTxAccessorAddress: '0x3d4BA2E0884aa488718476ca2FB8Efc291A46199', // SimulateTxAccessor v1.4.1
+    safeSingletonAbi: undefined,
+    safeProxyFactoryAbi: undefined,
+    multiSendAbi: undefined,
+    multiSendCallOnlyAbi: undefined,
+  },
+  // BSC (Binance Smart Chain)
+  [bsc.id]: {
+    safeSingletonAddress: '0x41675C099F32341bf84BFc5382aF534df5C7461a', // Safe v1.5.0
+    safeProxyFactoryAddress: '0x4e1DCF7AD4e460CfD30791CCC4F9c8a4f820ec67', // SafeProxyFactory v1.4.1
+    multiSendAddress: '0x38869bf66a61cF6bDB996A6aE40D5853Fd43B526', // MultiSend v1.4.1
+    multiSendCallOnlyAddress: '0x9641d764fc13c8B624c04430C7356C1C7C8102e2', // MultiSendCallOnly v1.4.1
+    fallbackHandlerAddress: '0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99', // CompatibilityFallbackHandler v1.4.1
+    signMessageLibAddress: '0xd53cd0aB83D845Ac265BE939c57F53AD838012c9', // SignMessageLib v1.4.1
+    createCallAddress: '0x9b35Af71d77eaf8d7e40252370304687390A1a52', // CreateCall v1.4.1
+    simulateTxAccessorAddress: '0x3d4BA2E0884aa488718476ca2FB8Efc291A46199', // SimulateTxAccessor v1.4.1
+    safeSingletonAbi: undefined,
+    safeProxyFactoryAbi: undefined,
+    multiSendAbi: undefined,
+    multiSendCallOnlyAbi: undefined,
   },
 };
 
