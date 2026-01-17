@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ChainListenerService } from './services/chain-listener.service';
 import { WalletTrackerService } from './services/wallet-tracker.service';
+import { AnkrVerificationService } from './services/ankr-verification.service';
 import { ListenerState, ListenerStateDocument } from './schemas/listener-state.schema';
 import { BlockchainTransaction, BlockchainTransactionDocument } from './schemas/blockchain-transaction.schema';
 import { Chain, ChainDocument } from '../chains/schemas/chain.schema';
@@ -14,6 +15,7 @@ export class BlockchainListenerController {
   constructor(
     private chainListenerService: ChainListenerService,
     private walletTrackerService: WalletTrackerService,
+    private ankrVerificationService: AnkrVerificationService,
     @InjectModel(Chain.name) private chainModel: Model<ChainDocument>,
     @InjectModel(ListenerState.name) private listenerStateModel: Model<ListenerStateDocument>,
     @InjectModel(BlockchainTransaction.name) private transactionModel: Model<BlockchainTransactionDocument>,
@@ -176,6 +178,62 @@ export class BlockchainListenerController {
     
     return {
       message: `Reprocessing blocks ${body.fromBlock} to ${body.toBlock} for ${chainCode}`,
+    };
+  }
+
+  /**
+   * ANKR VERIFICATION ENDPOINTS
+   */
+
+  @Get('verification/status')
+  async getVerificationStatus() {
+    const stats = await this.ankrVerificationService.getVerificationStats();
+    return {
+      status: 'ok',
+      verificationStats: stats,
+      description: 'Ankr Advanced API verification service status',
+    };
+  }
+
+  @Post('verification/trigger')
+  async triggerVerification(
+    @Body() body?: { chainCode?: string },
+  ) {
+    this.logger.log(`Manual verification triggered for ${body?.chainCode || 'all chains'}`);
+    
+    await this.ankrVerificationService.triggerManualVerification(body?.chainCode);
+    
+    return {
+      status: 'success',
+      message: `Verification triggered for ${body?.chainCode || 'all chains'}`,
+      timestamp: new Date(),
+    };
+  }
+
+  @Post('verification/wallet')
+  async verifyWallet(
+    @Body() body: { 
+      walletAddress: string; 
+      chainCode: string; 
+      fromTimestamp?: number; 
+      toTimestamp?: number 
+    },
+  ) {
+    this.logger.log(`Verifying wallet ${body.walletAddress} on ${body.chainCode}`);
+    
+    const result = await this.ankrVerificationService.verifyWalletTransactions(
+      body.walletAddress,
+      body.chainCode,
+      body.fromTimestamp,
+      body.toTimestamp,
+    );
+    
+    return {
+      status: 'success',
+      walletAddress: body.walletAddress,
+      chainCode: body.chainCode,
+      result,
+      timestamp: new Date(),
     };
   }
 }

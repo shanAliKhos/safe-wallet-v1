@@ -6,12 +6,14 @@ import { ChainListenerService } from './services/chain-listener.service';
 import { WalletTrackerService } from './services/wallet-tracker.service';
 import { TransactionProcessorService } from './services/transaction-processor.service';
 import { RateLimiterService } from './services/rate-limiter.service';
+import { AnkrVerificationService } from './services/ankr-verification.service';
 import { TransactionProcessorQueue } from './processors/transaction-processor.queue';
 import { ListenerState, ListenerStateSchema } from './schemas/listener-state.schema';
 import { BlockchainTransaction, BlockchainTransactionSchema } from './schemas/blockchain-transaction.schema';
 import { Chain, ChainSchema } from '../chains/schemas/chain.schema';
 import { Wallet, WalletSchema } from '../wallets/schemas/wallet.schema';
 import { BlockchainListenerController } from './blockchain-listener.controller';
+import { AnkrModule } from '../ankr/ankr.module';
 
 @Global()
 @Module({
@@ -40,6 +42,7 @@ import { BlockchainListenerController } from './blockchain-listener.controller';
       },
     }),
     ConfigModule,
+    AnkrModule, // Import AnkrModule to use AnkrService
   ],
   controllers: [BlockchainListenerController],
   providers: [
@@ -47,12 +50,14 @@ import { BlockchainListenerController } from './blockchain-listener.controller';
     WalletTrackerService,
     TransactionProcessorService,
     RateLimiterService,
+    AnkrVerificationService,
     TransactionProcessorQueue,
   ],
   exports: [
     ChainListenerService,
     WalletTrackerService,
     TransactionProcessorService,
+    AnkrVerificationService,
   ],
 })
 export class BlockchainListenerModule {}

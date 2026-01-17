@@ -396,6 +396,44 @@ export class WalletTrackerService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Get all tracked wallet addresses for a specific chain
+   * Returns a sample of addresses for verification purposes
+   */
+  async getTrackedWalletsForChain(chainCode: string, limit: number = 100): Promise<string[]> {
+    try {
+      const key = `${this.WALLET_SET_PREFIX}:${chainCode}`;
+      
+      // Get a random sample of tracked wallet addresses
+      // Using SRANDMEMBER to get random members without removing them
+      const addresses = await this.redis.srandmember(key, limit);
+      
+      if (!addresses || addresses.length === 0) {
+        this.logger.debug(`No tracked wallets found for chain ${chainCode}`);
+        return [];
+      }
+      
+      return Array.isArray(addresses) ? addresses : [addresses];
+    } catch (error) {
+      this.logger.error(`Error getting tracked wallets for ${chainCode}:`, error);
+      
+      // Fallback to MongoDB
+      try {
+        const wallets = await this.walletModel
+          .find({ isActive: true })
+          .limit(limit)
+          .select('address')
+          .lean()
+          .exec();
+        
+        return wallets.map(w => w.address.toLowerCase());
+      } catch (dbError) {
+        this.logger.error(`MongoDB fallback also failed: ${dbError.message}`);
+        return [];
+      }
+    }
+  }
+
+  /**
    * Get statistics about tracked wallets
    */
   async getStats(): Promise<Record<string, number>> {

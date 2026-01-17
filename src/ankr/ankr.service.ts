@@ -1,5 +1,8 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AnkrQueryService } from './services/ankr-query.service';
+import { AnkrTokenService } from './services/ankr-token.service';
+import { AnkrNftService } from './services/ankr-nft.service';
 import {
   GetBlockchainStatsParams,
   GetBlockchainStatsResponse,
@@ -62,82 +65,40 @@ import {
   GetNftTransfersParams,
   GetNftTransfersResponse,
 } from './dto/get-nft-transfers.dto';
-import {
-  JsonRpcRequest,
-  JsonRpcResponse,
-  JsonRpcError,
-} from './dto/json-rpc.dto';
 
+/**
+ * Ankr Service - Unified API
+ * 
+ * Main service that provides access to all Ankr Advanced API methods.
+ * Delegates to specialized services for better code organization:
+ * - Query API: Blockchain stats, blocks, logs, transactions
+ * - Token API: Balances, prices, holders, transfers
+ * - NFT API: Ownership, metadata, transfers
+ * 
+ * This service maintains backward compatibility while providing
+ * a clean, modular architecture for future maintenance.
+ * 
+ * @see https://www.ankr.com/docs/advanced-api/
+ */
 @Injectable()
 export class AnkrService {
   private readonly logger = new Logger(AnkrService.name);
-  private readonly baseUrl: string;
-  private readonly apiToken: string;
-  private requestIdCounter = 1;
+
+  // Specialized service instances
+  private queryService: AnkrQueryService;
+  private tokenService: AnkrTokenService;
+  private nftService: AnkrNftService;
 
   constructor(private configService: ConfigService) {
-    this.baseUrl = this.configService.get<string>('ankr.baseUrl') || '';
-    this.apiToken = this.configService.get<string>('ankr.apiToken') || '';
-
-    if (!this.apiToken) {
-      this.logger.warn(
-        'ANKR_API_TOKEN is not set. Ankr Query API calls will fail.',
-      );
-    }
+    // Initialize specialized services
+    this.queryService = new AnkrQueryService(configService);
+    this.tokenService = new AnkrTokenService(configService);
+    this.nftService = new AnkrNftService(configService);
   }
 
-  /**
-   * Make a JSON-RPC request to Ankr API
-   */
-  private async makeRequest<T>(
-    method: string,
-    params?: any,
-  ): Promise<JsonRpcResponse<T>> {
-    if (!this.apiToken) {
-      throw new BadRequestException('Ankr API token is not configured');
-    }
-
-    // Ankr Advanced API endpoint format: https://rpc.ankr.com/multichain/{token}
-    const url = `${this.baseUrl}/${this.apiToken}`;
-    const request: JsonRpcRequest = {
-      id: this.requestIdCounter++,
-      jsonrpc: '2.0',
-      method,
-      params: params || {},
-    };
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Ankr API request failed with status ${response.status}: ${response.statusText}`,
-        );
-      }
-
-      const data: JsonRpcResponse<T> = await response.json();
-
-      if (data.error) {
-        throw new Error(
-          `Ankr API error: ${data.error.message} (code: ${data.error.code})`,
-        );
-      }
-
-      return data;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(`Ankr API request failed: ${errorMessage}`, errorStack);
-      throw error;
-    }
-  }
+  // ==========================================
+  // QUERY API METHODS
+  // ==========================================
 
   /**
    * Retrieves blockchain statistics
@@ -145,37 +106,21 @@ export class AnkrService {
   async getBlockchainStats(
     params?: GetBlockchainStatsParams,
   ): Promise<GetBlockchainStatsResponse> {
-    const response = await this.makeRequest<GetBlockchainStatsResponse>(
-      'ankr_getBlockchainStats',
-      params || {},
-    );
-    return response.result!;
+    return this.queryService.getBlockchainStats(params);
   }
 
   /**
    * Retrieves the blocks' data for the specified range
    */
   async getBlocks(params: GetBlocksParams): Promise<GetBlocksResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-
-    const response = await this.makeRequest<GetBlocksResponse>(
-      'ankr_getBlocks',
-      params,
-    );
-    return response.result!;
+    return this.queryService.getBlocks(params);
   }
 
   /**
    * Retrieves historical data (logs) for the specified range of blocks
    */
   async getLogs(params: GetLogsParams): Promise<GetLogsResponse> {
-    const response = await this.makeRequest<GetLogsResponse>(
-      'ankr_getLogs',
-      params,
-    );
-    return response.result!;
+    return this.queryService.getLogs(params);
   }
 
   /**
@@ -184,15 +129,7 @@ export class AnkrService {
   async getTransactionsByHash(
     params: GetTransactionsByHashParams,
   ): Promise<GetTransactionsByHashResponse> {
-    if (!params.transactionHash) {
-      throw new BadRequestException('transactionHash parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTransactionsByHashResponse>(
-      'ankr_getTransactionsByHash',
-      params,
-    );
-    return response.result!;
+    return this.queryService.getTransactionsByHash(params);
   }
 
   /**
@@ -201,15 +138,7 @@ export class AnkrService {
   async getTransactionsByAddress(
     params: GetTransactionsByAddressParams,
   ): Promise<GetTransactionsByAddressResponse> {
-    if (!params.address) {
-      throw new BadRequestException('address parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTransactionsByAddressResponse>(
-      'ankr_getTransactionsByAddress',
-      params,
-    );
-    return response.result!;
+    return this.queryService.getTransactionsByAddress(params);
   }
 
   /**
@@ -218,20 +147,12 @@ export class AnkrService {
   async getInteractions(
     params: GetInteractionsParams,
   ): Promise<GetInteractionsResponse> {
-    if (!params.address) {
-      throw new BadRequestException('address parameter is required');
-    }
-
-    const response = await this.makeRequest<GetInteractionsResponse>(
-      'ankr_getInteractions',
-      params,
-    );
-    return response.result!;
+    return this.queryService.getInteractions(params);
   }
 
-  /**
-   * Token API Methods
-   */
+  // ==========================================
+  // TOKEN API METHODS
+  // ==========================================
 
   /**
    * Retrieves account balance
@@ -240,15 +161,7 @@ export class AnkrService {
   async getAccountBalance(
     params: GetAccountBalanceParams,
   ): Promise<GetAccountBalanceResponse> {
-    if (!params.walletAddress) {
-      throw new BadRequestException('walletAddress parameter is required');
-    }
-
-    const response = await this.makeRequest<GetAccountBalanceResponse>(
-      'ankr_getAccountBalance',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getAccountBalance(params);
   }
 
   /**
@@ -258,15 +171,7 @@ export class AnkrService {
   async getCurrencies(
     params: GetCurrenciesParams,
   ): Promise<GetCurrenciesResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-
-    const response = await this.makeRequest<GetCurrenciesResponse>(
-      'ankr_getCurrencies',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getCurrencies(params);
   }
 
   /**
@@ -276,15 +181,7 @@ export class AnkrService {
   async getTokenPrice(
     params: GetTokenPriceParams,
   ): Promise<GetTokenPriceResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTokenPriceResponse>(
-      'ankr_getTokenPrice',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getTokenPrice(params);
   }
 
   /**
@@ -294,18 +191,7 @@ export class AnkrService {
   async getTokenHolders(
     params: GetTokenHoldersParams,
   ): Promise<GetTokenHoldersResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-    if (!params.contractAddress) {
-      throw new BadRequestException('contractAddress parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTokenHoldersResponse>(
-      'ankr_getTokenHolders',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getTokenHolders(params);
   }
 
   /**
@@ -315,18 +201,7 @@ export class AnkrService {
   async getTokenHoldersCount(
     params: GetTokenHoldersCountParams,
   ): Promise<GetTokenHoldersCountResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-    if (!params.contractAddress) {
-      throw new BadRequestException('contractAddress parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTokenHoldersCountResponse>(
-      'ankr_getTokenHoldersCount',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getTokenHoldersCount(params);
   }
 
   /**
@@ -335,15 +210,7 @@ export class AnkrService {
   async getTokenTransfers(
     params: GetTokenTransfersParams,
   ): Promise<GetTokenTransfersResponse> {
-    if (!params.address) {
-      throw new BadRequestException('address parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTokenTransfersResponse>(
-      'ankr_getTokenTransfers',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getTokenTransfers(params);
   }
 
   /**
@@ -352,20 +219,12 @@ export class AnkrService {
   async getTokenPriceHistory(
     params: GetTokenPriceHistoryParams,
   ): Promise<GetTokenPriceHistoryResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-
-    const response = await this.makeRequest<GetTokenPriceHistoryResponse>(
-      'ankr_getTokenPriceHistory',
-      params,
-    );
-    return response.result!;
+    return this.tokenService.getTokenPriceHistory(params);
   }
 
-  /**
-   * NFT API Methods
-   */
+  // ==========================================
+  // NFT API METHODS
+  // ==========================================
 
   /**
    * Retrieves the account's NFT data
@@ -374,24 +233,7 @@ export class AnkrService {
   async getNFTsByOwner(
     params: GetNFTsByOwnerParams,
   ): Promise<GetNFTsByOwnerResponse> {
-    if (!params.walletAddress) {
-      throw new BadRequestException('walletAddress parameter is required');
-    }
-
-    // Validate pageSize: default=10, max=50
-    if (params.pageSize !== undefined) {
-      if (params.pageSize < 1 || params.pageSize > 50) {
-        throw new BadRequestException(
-          'pageSize must be between 1 and 50 (default: 10)',
-        );
-      }
-    }
-
-    const response = await this.makeRequest<GetNFTsByOwnerResponse>(
-      'ankr_getNFTsByOwner',
-      params,
-    );
-    return response.result!;
+    return this.nftService.getNFTsByOwner(params);
   }
 
   /**
@@ -401,21 +243,7 @@ export class AnkrService {
   async getNFTMetadata(
     params: GetNFTMetadataParams,
   ): Promise<GetNFTMetadataResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-    if (!params.contractAddress) {
-      throw new BadRequestException('contractAddress parameter is required');
-    }
-    if (params.tokenId === undefined || params.tokenId === null) {
-      throw new BadRequestException('tokenId parameter is required');
-    }
-
-    const response = await this.makeRequest<GetNFTMetadataResponse>(
-      'ankr_getNFTMetadata',
-      params,
-    );
-    return response.result!;
+    return this.nftService.getNFTMetadata(params);
   }
 
   /**
@@ -425,27 +253,7 @@ export class AnkrService {
   async getNFTHolders(
     params: GetNFTHoldersParams,
   ): Promise<GetNFTHoldersResponse> {
-    if (!params.blockchain) {
-      throw new BadRequestException('blockchain parameter is required');
-    }
-    if (!params.contractAddress) {
-      throw new BadRequestException('contractAddress parameter is required');
-    }
-
-    // Validate pageSize: max: 10000, default: 1000
-    if (params.pageSize !== undefined) {
-      if (params.pageSize < 1 || params.pageSize > 10000) {
-        throw new BadRequestException(
-          'pageSize must be between 1 and 10000 (default: 1000)',
-        );
-      }
-    }
-
-    const response = await this.makeRequest<GetNFTHoldersResponse>(
-      'ankr_getNFTHolders',
-      params,
-    );
-    return response.result!;
+    return this.nftService.getNFTHolders(params);
   }
 
   /**
@@ -455,38 +263,7 @@ export class AnkrService {
   async getNftTransfers(
     params: GetNftTransfersParams,
   ): Promise<GetNftTransfersResponse> {
-    if (!params.address) {
-      throw new BadRequestException('address parameter is required');
-    }
-
-    // Validate pageSize: max: 10000, default: 100
-    if (params.pageSize !== undefined) {
-      if (params.pageSize < 1 || params.pageSize > 10000) {
-        throw new BadRequestException(
-          'pageSize must be between 1 and 10000 (default: 100)',
-        );
-      }
-    }
-
-    // Validate block numbers and timestamps are non-negative
-    if (params.fromBlock !== undefined && params.fromBlock < 0) {
-      throw new BadRequestException('fromBlock must be >= 0');
-    }
-    if (params.toBlock !== undefined && params.toBlock < 0) {
-      throw new BadRequestException('toBlock must be >= 0');
-    }
-    if (params.fromTimestamp !== undefined && params.fromTimestamp < 0) {
-      throw new BadRequestException('fromTimestamp must be >= 0');
-    }
-    if (params.toTimestamp !== undefined && params.toTimestamp < 0) {
-      throw new BadRequestException('toTimestamp must be >= 0');
-    }
-
-    const response = await this.makeRequest<GetNftTransfersResponse>(
-      'ankr_getNftTransfers',
-      params,
-    );
-    return response.result!;
+    return this.nftService.getNftTransfers(params);
   }
 }
 
