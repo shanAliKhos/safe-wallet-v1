@@ -10,6 +10,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtCookieStrategy } from './strategies/jwt-cookie.strategy';
 import { IfAuthenticatedGuard } from './guards/if-authenticated.guard';
+import { ApiKeyGuard } from './guards/api-key.guard';
 
 @Module({
   imports: [
@@ -28,8 +29,8 @@ import { IfAuthenticatedGuard } from './guards/if-authenticated.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, JwtCookieStrategy, IfAuthenticatedGuard],
-  exports: [AuthService, IfAuthenticatedGuard],
+  providers: [AuthService, LocalStrategy, JwtStrategy, JwtCookieStrategy, ApiKeyGuard, IfAuthenticatedGuard],
+  exports: [AuthService, IfAuthenticatedGuard, ApiKeyGuard],
 })
 export class AuthModule {}
 

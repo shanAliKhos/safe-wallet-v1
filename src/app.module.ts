@@ -17,6 +17,7 @@ import { ChainsModule } from './chains/chains.module';
 import { CoinsModule } from './coins/coins.module';
 import { AnkrModule } from './ankr/ankr.module';
 import { BlockchainListenerModule } from './blockchain-listener/blockchain-listener.module';
+import { VendorApiModule } from './vendor-api/vendor-api.module';
 import { ChainsSeedService } from './chains/chains.seed';
 import { CoinsSeedService } from './coins/coins.seed';
 import configuration from './config/configuration';
@@ -54,6 +55,7 @@ import { validationSchema } from './config/validation.schema';
     CoinsModule,
     AnkrModule,
     BlockchainListenerModule,
+    VendorApiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

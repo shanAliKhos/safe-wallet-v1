@@ -663,7 +663,7 @@ export class SafeWalletService {
     });
 
     // Initialize relay kit
-    const gelatoApiKey = this.configService.get<string>('safe.gelatoApiKey');
+    const gelatoApiKey = this.configService.get<string>('gelatoApiKey');
     if (!gelatoApiKey) {
       throw new BadRequestException('Gelato API key not configured');
     }

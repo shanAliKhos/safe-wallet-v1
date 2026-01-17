@@ -129,5 +129,34 @@ export class TransactionsService {
     }
     return this.transactionModel.countDocuments(query).exec();
   }
+
+  /**
+   * Get transactions for a wallet
+   */
+  async getTransactionsByWallet(
+    walletId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      status?: TransactionStatus;
+      chain?: string;
+    } = {},
+  ): Promise<TransactionDocument[]> {
+    const query: any = { walletId: new Types.ObjectId(walletId) };
+
+    if (options.status) {
+      query.status = options.status;
+    }
+    if (options.chain) {
+      query.chain = options.chain;
+    }
+
+    return this.transactionModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(options.limit || 50)
+      .skip(options.offset || 0)
+      .exec();
+  }
 }
 

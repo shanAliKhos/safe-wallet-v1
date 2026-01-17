@@ -1,0 +1,526 @@
+{
+	"info": {
+		"_postman_id": "vendor-api-collection",
+		"name": "Safe Wallet - Vendor API",
+		"description": "Complete API collection for vendors/merchants to integrate Safe Wallet functionality",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "{{api_key}}",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "X-API-Key",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Wallets",
+			"item": [
+				{
+					"name": "Create Level 3 Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"label\": \"Customer Wallet #123\",\n  \"purpose\": \"Customer payment wallet\",\n  \"trackingId\": \"customer-123\",\n  \"callbackUrl\": \"https://your-site.com/webhook\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets"
+							]
+						},
+						"description": "Create a new Level 3 wallet (User Safe) for your customers"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Wallets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets"
+							]
+						},
+						"description": "Get all Level 3 wallets created by your vendor account"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "wallet_id_or_tracking_id",
+									"description": "Wallet ID or tracking ID"
+								}
+							]
+						},
+						"description": "Get a specific wallet by ID or tracking ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vendor Wallet",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendor/wallet",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendor",
+								"wallet"
+							]
+						},
+						"description": "Get your Level 2 vendor wallet information"
+					},
+					"response": []
+				}
+			],
+			"description": "Wallet management endpoints"
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Get All Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions?limit=50&offset=0&status=SUCCESS&chain=eth&walletId=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Number of transactions to return"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of transactions to skip"
+								},
+								{
+									"key": "status",
+									"value": "SUCCESS",
+									"description": "Filter by status (PENDING, PROCESSING, SUCCESS, FAILED)",
+									"disabled": true
+								},
+								{
+									"key": "chain",
+									"value": "eth",
+									"description": "Filter by chain (eth, bsc)",
+									"disabled": true
+								},
+								{
+									"key": "walletId",
+									"value": "",
+									"description": "Filter by wallet ID",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all transactions for your vendor account or a specific wallet"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "transaction_id",
+									"description": "Transaction ID"
+								}
+							]
+						},
+						"description": "Get a specific transaction by ID"
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction query endpoints"
+		},
+		{
+			"name": "Withdrawals",
+			"item": [
+				{
+					"name": "Send Transaction (Single Withdrawal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"toAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"amount\": \"1.5\",\n  \"tokenAddress\": \"\",\n  \"chain\": \"eth\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdraw/send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdraw",
+								"send"
+							]
+						},
+						"description": "Send a single transaction from your Level 2 vendor wallet. Omit tokenAddress for native token (ETH/BNB)."
+					},
+					"response": []
+				},
+				{
+					"name": "Send ERC20 Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"toAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"amount\": \"100\",\n  \"tokenAddress\": \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\",\n  \"chain\": \"eth\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdraw/send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdraw",
+								"send"
+							]
+						},
+						"description": "Send ERC20 token transaction. Example uses USDC on Ethereum."
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-Send Transaction (Batch Withdrawal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipients\": [\n    {\n      \"recipient\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n      \"amount\": \"1.5\",\n      \"tokenAddress\": \"\"\n    },\n    {\n      \"recipient\": \"0x8ba1f109551bD432803012645Hac136c22C929\",\n      \"amount\": \"2.0\",\n      \"tokenAddress\": \"\"\n    }\n  ],\n  \"chain\": \"eth\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdraw/multi-send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdraw",
+								"multi-send"
+							]
+						},
+						"description": "Send multiple transactions in a single batch. All recipients must use the same token type."
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-Send ERC20 Tokens",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipients\": [\n    {\n      \"recipient\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n      \"amount\": \"100\",\n      \"tokenAddress\": \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\"\n    },\n    {\n      \"recipient\": \"0x8ba1f109551bD432803012645Hac136c22C929\",\n      \"amount\": \"200\",\n      \"tokenAddress\": \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\"\n    }\n  ],\n  \"chain\": \"eth\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdraw/multi-send",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdraw",
+								"multi-send"
+							]
+						},
+						"description": "Multi-send ERC20 tokens. All recipients must use the same token address."
+					},
+					"response": []
+				}
+			],
+			"description": "Withdrawal endpoints - Only Level 2 (vendor) wallets can send transactions"
+		},
+		{
+			"name": "Coins",
+			"item": [
+				{
+					"name": "Get All Coins",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/coins?chain=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"coins"
+							],
+							"query": [
+								{
+									"key": "chain",
+									"value": "",
+									"description": "Filter by chain code (eth, bsc)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all available coins/tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coins by Chain",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/coins?chain=eth",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"coins"
+							],
+							"query": [
+								{
+									"key": "chain",
+									"value": "eth",
+									"description": "Chain code (eth, bsc)"
+								}
+							]
+						},
+						"description": "Get coins filtered by chain"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Coin by Currency Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/coins/:currencyCode",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"coins",
+								":currencyCode"
+							],
+							"variable": [
+								{
+									"key": "currencyCode",
+									"value": "ETH",
+									"description": "Currency code (ETH, BNB, USDT, etc.)"
+								}
+							]
+						},
+						"description": "Get a specific coin by currency code"
+					},
+					"response": []
+				}
+			],
+			"description": "Coin/token information endpoints"
+		},
+		{
+			"name": "Fee Estimation",
+			"item": [
+				{
+					"name": "Estimate Native Token Fee",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chain\": \"eth\",\n  \"fromAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"toAddress\": \"0x8ba1f109551bD432803012645Hac136c22C929\",\n  \"amount\": \"1.5\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/fees/estimate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fees",
+								"estimate"
+							]
+						},
+						"description": "Estimate gas fee for native token (ETH/BNB) transaction"
+					},
+					"response": []
+				},
+				{
+					"name": "Estimate ERC20 Token Fee",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chain\": \"eth\",\n  \"fromAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"toAddress\": \"0x8ba1f109551bD432803012645Hac136c22C929\",\n  \"amount\": \"100\",\n  \"tokenAddress\": \"0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/fees/estimate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"fees",
+								"estimate"
+							]
+						},
+						"description": "Estimate gas fee for ERC20 token transaction"
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction fee estimation endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4000",
+			"type": "string"
+		},
+		{
+			"key": "api_key",
+			"value": "your_api_key_here",
+			"type": "string"
+		}
+	]
+}
